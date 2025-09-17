@@ -1,0 +1,166 @@
+﻿@model ProductDetailViewModel
+<style>
+	.rating-container {
+		display: flex;
+		align-items: center; /* label và sao cùng hàng */
+		gap: 10px; /* khoảng cách giữa label và dãy sao */
+	}
+
+	.star-rating {
+		display: flex;
+		gap: 5px; /* khoảng cách giữa các sao */
+		font-size: 2rem;
+		cursor: pointer;
+	}
+
+	.star {
+		color: #ccc;
+		transition: color 0.2s, transform 0.2s;
+	}
+
+		.star.hover,
+		.star.selected {
+			color: gold;
+			transform: scale(1.2); /* hiệu ứng phóng to nhẹ khi hover/chọn */
+		}
+</style>
+<div class="row">
+	<div class="col-sm-3">
+		@Html.Partial("_Sidebar")
+	</div>
+
+	<div class="col-sm-9 padding-right">
+		<div class="product-details">
+			<!--product-details-->
+			<div class="col-sm-5">
+				<div class="view-product">
+					<img src="~/media/products/@Model.Products.Image" alt="" />
+				</div>
+				<div id="similar-product" class="carousel slide" data-ride="carousel">
+
+					<!-- Wrapper for slides -->
+					<div class="carousel-inner">
+						<div class="item active">
+							<a href=""><img src="images/product-details/similar1.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar2.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar3.jpg" alt=""></a>
+						</div>
+					</div>
+				</div>
+
+			</div>
+			<div class="col-sm-7">
+				<div class="product-information">
+					<!--/product-information-->
+					<h2>@Model.Products.Name</h2>
+					<span>
+						<span>@Model.Products.Price.ToString("#,##0 VND")</span>
+						<label>Quantity:</label>
+						<input type="text" value="1" style="padding-bottom:10px"/>
+						@if(@Model.Products.Quantity > 0)
+						{
+							<button type="button" class="btn btn-fefault cart add-to-cart" data-product_id="@Model.Products.Id">
+								<i class="fa fa-shopping-cart"></i>
+								Thêm giỏ hàng
+							</button>
+						}
+						else
+						{
+							<button type="button" class="btn btn-fefault cart">
+								<i class="fa fa-shopping-cart"></i>
+								Hết hàng
+							</button>
+						}
+					</span>
+					<p><b>Availability:</b> In Stock</p>
+					<p><b>Condition:</b> New</p>
+					<p><b>Brand:</b> @Model.Products.Brand.Name</p>
+					<p><b>Categories:</b> @Model.Products.Categories.Name</p>
+
+					<a href=""><img src="images/product-details/share.png" class="share img-responsive" alt="" /></a>
+				</div><!--/product-information-->
+			</div>
+		</div><!--/product-details-->
+
+		<div class="recommended_items">
+			<!--recommended_items-->
+			<h2 class="title text-center">Related Products</h2>
+
+			<div id="recommended-item-carousel" class="carousel slide" data-ride="carousel">
+				<div class="carousel-inner">
+					<div class="item active">
+						@foreach (var relatedProducts in @ViewBag.RelatedProducts as IEnumerable<ProductsModel>){
+							<div class="col-sm-4">
+								<div class="product-image-wrapper">
+									<div class="single-products">
+										<div class="productinfo text-center">
+											<a asp-action="Details" asp-controller="Products" asp-route-Id="@relatedProducts.Id">
+												<img src="~/media/products/@relatedProducts.Image" alt="@relatedProducts.Name" width="100%" />
+												<h2>@relatedProducts.Price.ToString("#,##0 VND")</h2>
+												<p>@relatedProducts.Name</p>
+												<p>Danh mục: @relatedProducts.Categories.Name</p>
+												<p>Thương hiệu: @relatedProducts.Brand.Name</p>
+											</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+			</div>
+		</div><!--/recommended_items-->
+
+	</div>
+</div>
+@section Scripts {
+	<partial name="_ValidationScriptsPartial" />
+	<script>
+		$(document).ready(function () {
+			var stars = $(".star-rating .star");
+			var hiddenInput = $("input[name='Ratings.Rating']"); // input hidden
+
+			// Hover tạm thời
+			stars.on("mouseenter", function () {
+				var val = $(this).data("value");
+				stars.each(function () {
+					$(this).toggleClass("hover", $(this).data("value") <= val);
+				});
+			}).on("mouseleave", function () {
+				stars.removeClass("hover");
+			});
+
+			// Click chọn giữ lại
+			stars.on("click", function () {
+				var val = $(this).data("value");
+				hiddenInput.val(val); // cập nhật vào input hidden để submit về model
+
+				stars.each(function () {
+					$(this).toggleClass("selected", $(this).data("value") <= val);
+				});
+			});
+		});
+	</script>
+	<script>
+		$('.add-to-cart').click(function () {
+			var Id = $(this).data("product_id");
+
+			//alert(product_id);
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("Add", "Cart")",
+				data: { Id: Id }, // Send data to the server
+
+				success: function (result) {
+					// Handle successful update
+					if (result) {
+
+						Swal.fire("Thêm giỏ hàng thành công.");
+					}
+				}
+			});
+		});
+	</script>
+}

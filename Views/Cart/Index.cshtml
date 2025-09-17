@@ -1,0 +1,225 @@
+﻿@using Shopping.Models.ViewModels
+@model CartItemViewModel
+<section id="cart_items">
+	<div class="container">
+		<div class="breadcrumbs">
+			<ol class="breadcrumb">
+				<li><a href="#">Home</a></li>
+				<li class="active">Shopping Cart</li>
+			</ol>
+		</div>
+        <div class="row">
+            <!-- Cột trái: Giỏ hàng -->
+            <div class="col-md-12">
+                <div class="table-responsive cart_info">
+                    <table class="table table-condensed" style="width:100%; table-layout:auto">
+                        <thead>
+                            <tr class="cart_menu" style="text-align:center">
+                                <td>Item</td>
+                                <td>Description</td>
+                                <td>Price</td>
+                                <td>Quantity</td>
+                                <td>Total</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.CartItems.Count > 0)
+                            {
+                                @foreach (var item in Model.CartItems)
+                                {
+                                    <tr>
+                                        <td class="cart_product" >
+                                            <a href="">
+                                                <img src="~/media/products/@item.Image" alt="" style="width: 150px; height: auto;">
+                                            </a>
+                                        </td>
+                                        <td class="cart_description" style="padding-left:75px">
+                                            <h4><a href="">@item.ProductName</a></h4>
+                                        </td>
+                                        <td class="cart_price">
+                                            <p>@item.Price.ToString("#,##0")</p>
+                                        </td>
+                                        <td>
+                                            <a class="btn btn-success btn-sm" asp-controller="Cart" asp-action="Increase" asp-route-id="@item.ProductID"> + </a>
+                                            <input class="cart_quantity_input" type="text" name="quantity" value="@item.Quantity" autocomplete="off" size="2" readonly/>
+                                            <a type="button" class="btn btn-success btn-sm" asp-controller="Cart" asp-action="Decrease" asp-route-id="@item.ProductID"> - </a>
+                                            <a type="button" class="btn btn-danger btn-sm" asp-controller="Cart" asp-action="Remove" asp-route-id="@item.ProductID"> Remove </a>
+                                        </td>
+                                        <td class="cart_total">
+                                            <p class="cart_total_price">
+                                                @Model.CartItems.Where(x => x.ProductID == @item.ProductID).Sum(x => x.Quantity * x.Price).ToString("#,##0")
+                                            </p>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5"><h4>Your cart is empty!</h4></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Cột phải: Thanh toán -->
+        @if (User.Identity?.IsAuthenticated ?? false)
+        {
+            <div class="row" style="margin-top:20px;">
+                <div class="col-md-6">
+                    <h4>Grand Total: <span class="cart_total_price">@Model.GrandTotal.ToString("#,##0")</span></h4>
+
+                    <form>
+                        Coupon Code:
+                        <input type="text" class="form-control coupon-value" />
+                        <span class="text text-success">@Model.CouponCode</span><br />
+                        <input type="button" value="Apply" class="btn btn-sm btn-primary btn-apply-coupon" />
+                    </form>
+
+                    <p>Cost: <span class="cart_total_price">@Model.ShippingCost.ToString("#,##0")</span></p>
+                    <p><a asp-action="DeleteShipping" asp-controller="Cart">Xóa ship</a></p>
+
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Tỉnh/Thành phố</label>
+                        <select class="css_select" id="tinh" name="tinh"><option value="0">Tỉnh Thành</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quận/huyện</label>
+                        <select class="css_select" id="quan" name="quan"><option value="0">Quận Huyện</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Phường/xã</label>
+                        <select class="css_select" id="phuong" name="phuong"><option value="0">Phường Xã</option></select>
+                    </div>
+                    <button type="button" class="btn btn-default btn-add-shipping" style="margin-bottom:10px">Tính phí ship</button> <br />
+
+                    <form method="POST" asp-action="CreatePaymentUrlVnpay" asp-controller="Payment">
+                        <input type="hidden" name="Amount" value="@Model.GrandTotal" />
+                        <input type="hidden" name="Name" value="@User.Identity.Name" />
+                        <input type="hidden" name="OrderType" value="other" />
+                        <input type="hidden" name="OrderDescription" value="Thanh toan qua Vnpay" />
+                        @if (Model.ShippingCost > 0)
+                        {
+                            <button disabled="disabled" type="submit" class="btn btn-success">Thanh toán bằng VnPay</button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-success">Thanh toán bằng VnPay</button>
+                        }
+                    </form>
+
+                    <div style="padding-top:10px; padding-bottom:10px">
+                        <a class="btn btn-danger btn-sm" asp-controller="Cart" asp-action="Clear">Clear</a>
+                        @if (Model.ShippingCost <= 0)
+                        {
+                            <a disabled="disabled" class="btn btn-warning btn-sm">Thanh toán khi nhận hàng</a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-primary btn-sm" asp-controller="Checkout" asp-action="Checkout">Thanh toán khi nhận hàng</a>
+                        }
+
+                    </div>
+
+                </div>
+            </div>
+        }
+        </div>
+	</div>
+</section> <!--/#cart_items-->
+@section Scripts{
+	<script>
+		//delete shipping cost
+		$(".btn-apply-coupon").click(function () {
+			var coupon_value = $(".coupon-value").val();
+			//alert(coupon_value);
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("GetCoupon", "Cart")",
+				data: { coupon_value: coupon_value },
+				success: function (result) {
+					if (result.success) {
+
+						Swal.fire(result.message);
+						// location.reload();
+					} else {
+
+						Swal.fire(result.message);
+					}
+				}
+
+			});
+		});
+	</script>
+	<script>
+				$(".btn-add-shipping").click(function () {
+			var tinh = $("#tinh").find('option:selected').text();
+			var quan = $("#quan").find('option:selected').text();
+			var phuong = $("#phuong").find('option:selected').text();
+
+			// alert(tinh);
+			// alert(quan);
+			// alert(phuong);
+			// alert(price);
+			if (tinh == '' || quan == '' || phuong == '') {
+				Swal.fire("Làm ơn ko bỏ trống.");
+			} else {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("GetShipping", "Cart")",
+					data: { tinh: tinh, quan: quan, phuong: phuong}, // Send data to the server
+
+					success: function (result) {
+						// Handle successful update
+						if (result) {
+							location.reload();
+						}
+					}
+				});
+			}
+		})
+	</script>
+	<script>
+		$(document).ready(function() {
+		   //Lấy tỉnh thành
+		   $.getJSON('https://esgoo.net/api-tinhthanh/1/0.htm',function(data_tinh){
+			   if(data_tinh.error==0){
+				  $.each(data_tinh.data, function (key_tinh,val_tinh) {
+					 $("#tinh").append('<option value="'+val_tinh.id+'">'+val_tinh.full_name+'</option>');
+				  });
+				  $("#tinh").change(function(e){
+					   var idtinh=$(this).val();
+					   //Lấy quận huyện
+					   $.getJSON('https://esgoo.net/api-tinhthanh/2/'+idtinh+'.htm',function(data_quan){
+						   if(data_quan.error==0){
+							  $("#quan").html('<option value="0">Quận Huyện</option>');
+							  $("#phuong").html('<option value="0">Phường Xã</option>');
+							  $.each(data_quan.data, function (key_quan,val_quan) {
+								 $("#quan").append('<option value="'+val_quan.id+'">'+val_quan.full_name+'</option>');
+							  });
+							  //Lấy phường xã
+							  $("#quan").change(function(e){
+								   var idquan=$(this).val();
+								   $.getJSON('https://esgoo.net/api-tinhthanh/3/'+idquan+'.htm',function(data_phuong){
+									   if(data_phuong.error==0){
+										  $("#phuong").html('<option value="0">Phường Xã</option>');
+										  $.each(data_phuong.data, function (key_phuong,val_phuong) {
+											 $("#phuong").append('<option value="'+val_phuong.id+'">'+val_phuong.full_name+'</option>');
+										  });
+									   }
+								   });
+							  });
+
+						   }
+					   });
+				  });
+
+			   }
+		   });
+		});
+	</script>
+}

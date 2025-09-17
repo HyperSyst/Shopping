@@ -1,0 +1,32 @@
+﻿@model VnpayModel
+
+@{
+    ViewData["tile"] = "Thông tin thanh toán VnPay";
+}
+
+<body>
+    <h3>VnPay payment information</h3>
+    <a class="btn btn-primary" asp-action="Index" asp-controller="Order">Back to Orders</a>
+    <table id="myTable" class="table">
+        <thead style="text-align:center">
+            <tr >
+                <th>Transaction ID</th>
+                <th>Order Description</th>
+                <th>Order ID</th>
+                <th>Payment Method</th>
+                <th>Payment ID</th>
+                <th>Date Created</th>
+            </tr>
+        </thead>
+        <tbody style="text-align:left">
+            <tr >
+                <th>@Model.TransactionId</th>
+                <th>@Model.OrderDescription</th>
+                <th>@Model.OrderId</th>
+                <th>@Model.PaymentMethod</th>
+                <th>@Model.PaymentId</th>
+                <th>@Model.DateCreated</th>
+            </tr>
+        </tbody>
+    </table>
+</body>
